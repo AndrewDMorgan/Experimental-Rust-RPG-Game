@@ -16,14 +16,14 @@ pub struct Entity {
     pub health: u8,
     pub damage: u8,
     // functions (so that specific function behaviors can be passed in)
-    pub entityAi: fn (&mut Entity, &mut game::GameData, Action),
+    pub entityAi: fn (&mut Entity, &mut game::GameData, Reaction),
     pub renderer: fn (&Entity) -> render::DynamicRenderFunction,
 }
 
 
 impl Entity {
     // the constructor
-    pub fn new (startingPosX: usize, startingPosY: usize, mobHealth: u8, mobDamange: u8, mobAi: fn (&mut Entity, &mut game::GameData, Action), mobRenderer: fn (&Entity) -> render::DynamicRenderFunction) -> Self {
+    pub fn new (startingPosX: usize, startingPosY: usize, mobHealth: u8, mobDamange: u8, mobAi: fn (&mut Entity, &mut game::GameData, Reaction), mobRenderer: fn (&Entity) -> render::DynamicRenderFunction) -> Self {
         Entity {
             positionX: startingPosX,
             positionY: startingPosY,
@@ -58,8 +58,7 @@ impl Entity {
 
 
 // reaction/action types (so that a single ai function can be used with a match statement to determine behavior)
-pub enum Action {
-    Move,
+pub enum Reaction {
     Attacked,
     Died,  // deals with anything necessary before deletion
 }
@@ -69,15 +68,20 @@ pub enum Action {
 //                                       Mob Behavior & Rendering Functions
 // ==============================================================================================================
 
-pub fn ZombieAi (entity: &mut Entity, gameData: &mut game::GameData, action: Action) {
-    match action {
-        Action::Move     => {
+pub fn ZombieAi (entity: &mut Entity, gameData: &mut game::GameData, reaction: Reaction) {
+    
+    // moving
+
+    
+    // attacking
+
+
+    // reacting to any events
+    match reaction {
+        Reaction::Attacked => {
             //
         }
-        Action::Attacked => {
-            //
-        }
-        Action::Died     => {
+        Reaction::Died     => {
             //
         }
     }

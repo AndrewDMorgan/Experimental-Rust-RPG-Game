@@ -16,8 +16,12 @@ pub enum ItemType {
 
 // a type allias for the dynamic usage; allows different implimentations
 // for different types of items (Traits don't seem to be as staight forward for this application?)
-pub type ItemUsage <const TOTAL_SIZE_1D: usize> = Box <dyn Fn (&player::Player <TOTAL_SIZE_1D>, &mut Vec <mobs::Entity>, &userInput::Input, &userInput::Direction)>;
-pub type ItemHolding <const TOTAL_SIZE_1D: usize> = Box <dyn Fn (&mut levelMaps::MapData <'static, TOTAL_SIZE_1D>, &player::Player <TOTAL_SIZE_1D>)>;
+pub type ItemUsage <const TOTAL_SIZE_1D: usize> = Box <dyn Fn (
+    &player::Player <TOTAL_SIZE_1D>, &mut Vec <mobs::Entity>,
+    &userInput::Input, &userInput::Direction)>;
+pub type ItemHolding <const TOTAL_SIZE_1D: usize> = Box <dyn Fn (
+    &mut levelMaps::MapData <'static, TOTAL_SIZE_1D>,
+    &player::Player <TOTAL_SIZE_1D>)>;
 
 pub struct Item <const TOTAL_SIZE_1D: usize> {
     pub name: String,
@@ -61,7 +65,7 @@ pub fn GetMeleWeaponUsageFunction <const TOTAL_SIZE_1D: usize> (damage: u8, rang
 }
 
 // basic function impl's for the ItemUsage behavior (holding; for things like light)
-pub fn GetMeleWeaponHoldingFunction <const TOTAL_SIZE_1D: usize> (lightStrength: usize) -> ItemHolding <TOTAL_SIZE_1D> {
+pub fn GetHeldLightFunction <const TOTAL_SIZE_1D: usize> (lightStrength: usize) -> ItemHolding <TOTAL_SIZE_1D> {
     // generates a function
     Box::new(move |levelMap, player| {
         

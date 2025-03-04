@@ -43,6 +43,7 @@ pub fn InitializeGameData () -> GameData {
     }
 }
 
+
 // the main game loop
 pub fn Game (gameData: &mut GameData) {
     // generating test walls (for light propagation)
@@ -100,12 +101,12 @@ pub fn Game (gameData: &mut GameData) {
         println!();  // white space to make a seperation between the game and any ui
 
         let (action, actionDirection) = userInput::GetGameInput();
-
+        
         // updating the player
         gameData.player.Update
                 (&mut gameData.levelMaps[gameData.currentLevel],
                 &mut gameData.monsters, (&action, &actionDirection));
-
+        
         // updating the mobs (first removing any dead ones)
         let mut aliveMobs: Vec <mobs::Entity> = vec!();
         while let Some(mob) = gameData.monsters.pop() {

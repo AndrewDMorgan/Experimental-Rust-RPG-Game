@@ -64,7 +64,7 @@ impl <'a, const TOTAL_SIZE_1D: usize> MapData <'a, TOTAL_SIZE_1D> {
     // generates a radial light around a point
     pub fn GenerateLightAura (&mut self, lightStrength: &usize, lightPosX: &usize, lightPosY: &usize) {
         // checking if the starting point is valid
-        if !self.CheckLightNeigbor(0, lightPosX, lightPosY) {
+        if !self.CheckLightNeigbor(9 - *lightStrength, lightPosX, lightPosY) {
                 return;  // invalid position
                 // no need to throw an error as this won't impact any other parts of the system
         }

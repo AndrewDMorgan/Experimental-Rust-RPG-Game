@@ -8,6 +8,7 @@ pub enum Input {
     Move,
     Interact,
     Inventory,
+    HandSelect (usize),
     Exit,
     Null,
 }
@@ -69,6 +70,7 @@ pub fn GetGameInput () -> (Input, Direction) {
         "Move" | "move" => Input::Move,
         "Interact" | "interact" => Input::Interact,
         "Inventory" | "inventory" => Input::Inventory,
+        s if s.parse::<usize>().is_ok() => Input::HandSelect (s.parse::<usize>().unwrap()),
         "Exit" | "exit" => Input::Exit,
         _ => Input::Null,
     };

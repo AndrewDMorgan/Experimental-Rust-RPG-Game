@@ -32,7 +32,15 @@ impl <const TOTAL_SIZE_1D: usize> Player <TOTAL_SIZE_1D>  {
                     name: "Rusty Bat".to_string(),
                     itemType: items::ItemType::Weapon,
                     itemUsageFunc: items::GetMeleWeaponUsageFunction(10, 1),
-                    itemHeldUpdateFunc: items::GetMeleWeaponHoldingFunction(0)
+                    itemHeldUpdateFunc: items::GetHeldLightFunction(0),
+                },
+                // starter torch (the player has a base light level, but this has a greater one)
+                items::Item {
+                    name: "Charred Torch".to_string(),
+                    itemType: items::ItemType::Light,
+                    // empty behavior (torches don't attack)
+                    itemUsageFunc: Box::new(move |_player, _monsters, _action, _direction| {}),
+                    itemHeldUpdateFunc: items::GetHeldLightFunction(6),
                 }
             ],
             hand: 0,
@@ -62,7 +70,7 @@ impl <const TOTAL_SIZE_1D: usize> Player <TOTAL_SIZE_1D>  {
             ) {
         
         // getting the direction of the action
-        let (dirX, dirY): (isize, isize) = userInput::GetDirectionOffsets(&inputDirection);
+        let (dirX, dirY): (isize, isize) = userInput::GetDirectionOffsets(inputDirection);
 
         // moving the player
         match playerInput {
@@ -92,15 +100,22 @@ impl <const TOTAL_SIZE_1D: usize> Player <TOTAL_SIZE_1D>  {
                 }
             },
             userInput::Input::Attack => {
-                (self.items[self.hand].itemUsageFunc) (self, monsters, &playerInput, &inputDirection);
+                (self.items[self.hand].itemUsageFunc) (self, monsters, playerInput, inputDirection);
             },
             userInput::Input::Interact => {},
+            userInput::Input::HandSelect (newHand) => {
+                if *newHand >= 1 && newHand <= &self.items.len()
+                    {  self.hand = *newHand - 1;  }
+            },
             userInput::Input::Inventory => {},
             _ => {}
         }
-
+        
         // updating the player's light on the tilemap
-        tileMap.GenerateLightAura(&9, &self.positionX, &self.positionY);
+        tileMap.GenerateLightAura(&4, &self.positionX, &self.positionY);
+
+        // calling the holding update function for any held items
+        (self.items[self.hand].itemHeldUpdateFunc) (tileMap, self);
 
     }
 
