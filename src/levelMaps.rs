@@ -1,7 +1,7 @@
 // snake case is bad
 #![allow(non_snake_case)]
 
-// an array of solid characters
+// an array of solid characters/tiles
 const SOLID_TILES: [Tiles; 1] = [Tiles::Wall];
 
 
@@ -41,6 +41,16 @@ impl <'a, const TOTAL_SIZE_1D: usize> MapData <'a, TOTAL_SIZE_1D> {
         }
     }
 
+    // checks for collision with a given tile
+    pub fn CheckTileCollision (&self, x: usize, y: usize) -> bool {
+        if x < self.mapSizeX &&
+           y < self.mapSizeY &&
+           !SOLID_TILES.contains(self.tileMap[x + y * self.mapSizeX])
+           {
+            return true;
+        } false
+    }
+
     // checks for a neighbor's light compared to the current light for the GenerateLightAura function
     fn CheckLightNeigbor (&self, lightLevel: usize, pointX: &usize, pointY: &usize) -> bool {
         if *pointX < self.mapSizeX && *pointY < self.mapSizeY {  // this should prevent any errors when directly acsessing lightMap
@@ -64,7 +74,7 @@ impl <'a, const TOTAL_SIZE_1D: usize> MapData <'a, TOTAL_SIZE_1D> {
         let mut newSamplePoints: Vec <(usize, usize)> = vec!();  // so the list can copy over after and itteration
         samplePoints.push((*lightPosX, *lightPosY));
 
-        for lightLevel in 0..=*lightStrength {
+        for lightLevel in (9-*lightStrength)..10 {
             for (pointX, pointY) in &samplePoints {
                 // adding the light level for the given point
                 let index = pointX + pointY * self.mapSizeX;

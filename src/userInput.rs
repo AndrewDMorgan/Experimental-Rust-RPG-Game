@@ -45,16 +45,18 @@ pub fn GetGameInput () -> (Input, Direction) {
         let (actionDirection, userActionInput) = userTextInput.split_at(2usize);
         _userAction = userActionInput.trim();  // seperated out the direction
 
+        let actionDir = actionDirection.trim();
+
         // getting the direction
-        direction = match actionDirection {
-            "N" => Direction::Up,
-            "E" => Direction::Right,
-            "S" => Direction::Down,
-            "W" => Direction::Left,
-            "NE" => Direction::UpRight,
-            "NW" => Direction::UpLeft,
-            "SE" => Direction::DownRight,
-            "SW" => Direction::DownLeft,
+        direction = match actionDir {
+            "N" | "n" => Direction::Up,
+            "E" | "e" => Direction::Right,
+            "S" | "s" => Direction::Down,
+            "W" | "w" => Direction::Left,
+            "NE" | "ne" => Direction::UpRight,
+            "NW" | "nw" => Direction::UpLeft,
+            "SE" | "se" => Direction::DownRight,
+            "SW" | "sw" => Direction::DownLeft,
             _ => Direction::Null,
         }
     } else {
@@ -63,14 +65,48 @@ pub fn GetGameInput () -> (Input, Direction) {
     }
 
     let usrInput = match _userAction {
-        "Attack" => Input::Attack,
-        "Move" => Input::Move,
-        "Interact" => Input::Interact,
-        "Inventory" => Input::Inventory,
-        "Exit" => Input::Exit,
+        "Attack" | "attack" => Input::Attack,
+        "Move" | "move" => Input::Move,
+        "Interact" | "interact" => Input::Interact,
+        "Inventory" | "inventory" => Input::Inventory,
+        "Exit" | "exit" => Input::Exit,
         _ => Input::Null,
     };
 
     (usrInput, direction)  // the output
+}
+
+
+// converts an input direction to a tuple for an offset
+pub fn GetDirectionOffsets (direction: &Direction) -> (isize, isize) {
+    match direction {
+        Direction::Down => {
+            (0, 1)
+        }
+        Direction::DownLeft => {
+            (-1, 1)
+        }
+        Direction::DownRight => {
+            (1, 1)
+        }
+        Direction::Left => {
+            (-1, 0)
+        }
+        Direction::Right => {
+            (1, 0)
+        }
+        Direction::Up => {
+            (0, -1)
+        }
+        Direction::UpLeft => {
+            (-1, -1)
+        }
+        Direction::UpRight => {
+            (1, -1)
+        }
+        Direction::Null => {
+            (0, 0)
+        }
+    }
 }
 
