@@ -8,34 +8,69 @@ use crate::mobs;
 
 
 // the type of item (weapon, ranged, light, etc..)
-pub enum ItemType {
+//#[derive(Clone)]
+/*pub enum ItemType {
     Weapon,
     Light,
-}
+}*/
 
 
 // a type allias for the dynamic usage; allows different implimentations
 // for different types of items (Traits don't seem to be as staight forward for this application?)
-pub type ItemUsage <const TOTAL_SIZE_1D: usize> = Box <dyn Fn (
-    &player::Player <TOTAL_SIZE_1D>, &mut Vec <mobs::Entity>,
-    &userInput::Input, &userInput::Direction)>;
-pub type ItemHolding <const TOTAL_SIZE_1D: usize> = Box <dyn Fn (
-    &mut levelMaps::MapData <'static, TOTAL_SIZE_1D>,
-    &player::Player <TOTAL_SIZE_1D>)>;
+pub type ItemUsage = std::sync::Arc <dyn Fn (
+    &player::Player, &mut Vec <mobs::Entity>,
+    &userInput::Input, &userInput::Direction
+)>;
+pub type ItemEnchantment = std::sync::Arc <dyn Fn (
+    // takes in the current initial damage value, and the mob
+    // (calculates it's own damage/damge effects)
+    &u8, &mut mobs::Entity
+)>;
 
-pub struct Item <const TOTAL_SIZE_1D: usize> {
+pub type ItemHolding = std::sync::Arc <dyn Fn (
+    &mut levelMaps::MapData <'static>,
+    &player::Player)>;
+
+
+#[derive(Clone)]
+pub struct Item {
     pub name: String,
-    pub itemType: ItemType,
-    pub itemUsageFunc: ItemUsage <TOTAL_SIZE_1D>,
-    pub itemHeldUpdateFunc: ItemHolding <TOTAL_SIZE_1D>,
+    //pub itemType: ItemType,
+    pub itemUsageFunc: ItemUsage,
+    pub itemHeldUpdateFunc: ItemHolding,
+
+    // more weapon specific
+    pub damage: u8,
+    pub range: usize,
+    pub enchantments: Vec <(ItemEnchantment, String)>,
+}
+
+
+// applies the on fire effect
+pub fn GetFireEnchantment (strength: u8, durationFrames: usize) -> ItemEnchantment {
+    std::sync::Arc::new(move |_damage, mob| {
+        mob.mobEffects.push((strength, durationFrames, "On Fire".to_string()));
+    })
+}
+
+// increases the base damage by a constant
+pub fn GetSharpnessEnchantment (strength: u8) -> ItemEnchantment {
+    std::sync::Arc::new(move |_damage, mob| {
+        mob.Attack(strength);
+    })
 }
 
 
 // basic function impl's for the ItemUsage behavior (attacking)
 // this system should allow a ton of flexibility
-pub fn GetMeleWeaponUsageFunction <const TOTAL_SIZE_1D: usize> (damage: u8, range: usize) -> ItemUsage <TOTAL_SIZE_1D> {
+// the enchaments I believe are being moved into the function; shouldn't matter though
+pub fn GetMeleWeaponUsageFunction (
+        damage: u8, range: usize,
+        enchantments: Vec <(ItemEnchantment, String)>
+    ) -> ItemUsage {
+    
     // generates a function
-    Box::new(move |player, monsters, _action, direction| {
+    std::sync::Arc::new(move |player, monsters, _action, direction| {
 
         // the position is moved based on attack direction to
         // check all positions for a monster
@@ -57,6 +92,9 @@ pub fn GetMeleWeaponUsageFunction <const TOTAL_SIZE_1D: usize> (damage: u8, rang
                     
                     // attacking the monster
                     mob.Attack(damage);
+                    for (enchantment, _name) in &enchantments {
+                        (enchantment) (&damage, mob);
+                    }
                 }
             }
         }
@@ -65,9 +103,9 @@ pub fn GetMeleWeaponUsageFunction <const TOTAL_SIZE_1D: usize> (damage: u8, rang
 }
 
 // basic function impl's for the ItemUsage behavior (holding; for things like light)
-pub fn GetHeldLightFunction <const TOTAL_SIZE_1D: usize> (lightStrength: usize) -> ItemHolding <TOTAL_SIZE_1D> {
+pub fn GetHeldLightFunction (lightStrength: usize) -> ItemHolding {
     // generates a function
-    Box::new(move |levelMap, player| {
+    std::sync::Arc::new(move |levelMap, player| {
         
         // updating the lighting
         levelMap.GenerateLightAura(&lightStrength, &player.positionX, &player.positionY);

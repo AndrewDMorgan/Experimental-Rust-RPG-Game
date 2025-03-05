@@ -11,6 +11,15 @@ Entity rendering is working!
     and the camera position/bound box was fixed!
 Entities can be killed!
 Player actions work! & dynamic items were added!
+Mob AI!
+Enchantments!
+Effects!
+Chests! (still need to test)
+
+just need:
+ * item drops?
+ * levels
+ * anything else I think of
 
 
 because of the dynamic function system that seperates items

@@ -12,15 +12,15 @@ const PLAYER_LIGHT_SPRITES: [&str; 10] = ["!!", "!!", "!!", "!!", "!!", "!!", "!
 
 
 // storing the data for a player
-pub struct Player <const TOTAL_SIZE_1D: usize> {
+pub struct Player {
     pub positionX: usize,
     pub positionY: usize,
     pub health: u8,
-    pub items: Vec <items::Item <TOTAL_SIZE_1D>>,
+    pub items: Vec <items::Item>,
     pub hand: usize,  // the index of the item being held
 }
 
-impl <const TOTAL_SIZE_1D: usize> Player <TOTAL_SIZE_1D>  {
+impl Player {
     pub fn new (startingPosX: usize, startingPosY: usize) -> Self {
         Player {
             positionX: startingPosX,
@@ -30,20 +30,37 @@ impl <const TOTAL_SIZE_1D: usize> Player <TOTAL_SIZE_1D>  {
                 // starter weapon
                 items::Item {
                     name: "Rusty Bat".to_string(),
-                    itemType: items::ItemType::Weapon,
-                    itemUsageFunc: items::GetMeleWeaponUsageFunction(10, 1),
+                    //itemType: items::ItemType::Weapon,
+                    itemUsageFunc: items::GetMeleWeaponUsageFunction(10, 1, vec![
+                        (items::GetFireEnchantment(0, 0), "Flame".to_string()),
+                        (items::GetSharpnessEnchantment(0), "Sharpness".to_string()),
+                    ]),
                     itemHeldUpdateFunc: items::GetHeldLightFunction(0),
+                    damage: 10,
+                    range: 1,
+                    enchantments: vec!(),
                 },
                 // starter torch (the player has a base light level, but this has a greater one)
                 items::Item {
                     name: "Charred Torch".to_string(),
-                    itemType: items::ItemType::Light,
+                    //itemType: items::ItemType::Light,
                     // empty behavior (torches don't attack)
-                    itemUsageFunc: Box::new(move |_player, _monsters, _action, _direction| {}),
+                    itemUsageFunc: std::sync::Arc::new(move |_player, _monsters, _action, _direction| {}),
                     itemHeldUpdateFunc: items::GetHeldLightFunction(6),
+                    damage: 0,
+                    range: 0,
+                    enchantments: vec!(),
                 }
             ],
             hand: 0,
+        }
+    }
+
+    pub fn Attack (&mut self, damage: u8) {
+        if damage > self.health {
+            self.health = 0;
+        } else {
+            self.health -= damage;
         }
     }
 
@@ -63,9 +80,11 @@ impl <const TOTAL_SIZE_1D: usize> Player <TOTAL_SIZE_1D>  {
     }
 
     // updates the player
-    pub fn Update (
-                  &mut self, tileMap: &mut levelMaps::MapData <'static, TOTAL_SIZE_1D>,
+    pub fn Update <const NUMBER_OF_ITEMS: usize, const NUMBER_OF_ENCHANTMENTS: usize> (
+                  &mut self, tileMap: &mut levelMaps::MapData <'static>,
                   monsters: &mut Vec <mobs::Entity>,
+                  chestLootTable: &[(usize, items::Item); NUMBER_OF_ITEMS],
+                  enchatnmentsTable: &[(usize, items::ItemEnchantment, String); NUMBER_OF_ENCHANTMENTS],
                   (playerInput, inputDirection): (&userInput::Input, &userInput::Direction)
             ) {
         
@@ -102,7 +121,14 @@ impl <const TOTAL_SIZE_1D: usize> Player <TOTAL_SIZE_1D>  {
             userInput::Input::Attack => {
                 (self.items[self.hand].itemUsageFunc) (self, monsters, playerInput, inputDirection);
             },
-            userInput::Input::Interact => {},
+            userInput::Input::Interact => {
+                // attempting to interact with any chests
+                let posX = (self.positionX as isize + dirX).unsigned_abs();
+                let posY = (self.positionY as isize + dirY).unsigned_abs();
+
+                levelMaps::TryLootTile(self, tileMap, chestLootTable, posX, posY);
+                levelMaps::TryEnchantment(self, tileMap, enchatnmentsTable, posX, posY);
+            },
             userInput::Input::HandSelect (newHand) => {
                 if *newHand >= 1 && newHand <= &self.items.len()
                     {  self.hand = *newHand - 1;  }
@@ -111,12 +137,11 @@ impl <const TOTAL_SIZE_1D: usize> Player <TOTAL_SIZE_1D>  {
             _ => {}
         }
         
-        // updating the player's light on the tilemap
-        tileMap.GenerateLightAura(&4, &self.positionX, &self.positionY);
-
         // calling the holding update function for any held items
         (self.items[self.hand].itemHeldUpdateFunc) (tileMap, self);
 
+        // updating the player's light on the tilemap
+        tileMap.GenerateLightAura(&4, &self.positionX, &self.positionY);
     }
 
 }

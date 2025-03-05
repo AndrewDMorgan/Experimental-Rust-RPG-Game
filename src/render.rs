@@ -17,6 +17,8 @@ lazy_static::lazy_static! {
         HashMap::from([
             (levelMaps::Tiles::Empty, ["  ", "  ", "  ", "..", "..", "\"\"", ";;", "++", "**", "##"]),
             (levelMaps::Tiles::Wall , ["==", "==", "==", "==", "==", "==", "##", "##", "##", "##"]),
+            (levelMaps::Tiles::Chest , ["[]", "[]", "[]", "[]", "[]", "[]", "[]", "[]", "##", "##"]),
+            (levelMaps::Tiles::EnchantmentTable , ["()", "()", "()", "()", "()", "()", "()", "##", "##", "##"]),
         ])};
 }
 

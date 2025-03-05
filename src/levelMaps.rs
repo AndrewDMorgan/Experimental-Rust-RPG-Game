@@ -1,44 +1,73 @@
 // snake case is bad
 #![allow(non_snake_case)]
 
+use crate::{game, items, player};
+
+use rand::Rng;
+
 // an array of solid characters/tiles
-const SOLID_TILES: [Tiles; 1] = [Tiles::Wall];
+const SOLID_TILES: [Tiles; 1] = [
+    Tiles::Wall
+];
+
+// all chest tiles
+const CHEST_TILES: [Tiles; 1] = [
+    Tiles::Chest
+];
+
+// all enchantment tiles
+const ENCHANTMENT_TILES: [Tiles; 1] = [
+    Tiles::EnchantmentTable
+];
 
 
 // an enum of the different tiles
-#[derive(Hash, Eq, PartialEq)]
+#[derive(Hash, Eq, PartialEq, Clone, Copy)]
 pub enum Tiles {
     Wall,
     Empty,
+    Chest,
+    EnchantmentTable,
 }
 
 
 // stores map data
 #[derive(Clone, Copy)]  // so an array of these can be constructed (it'll need to copy it for a unique instance to be placed in each element of the array)
-pub struct MapData <'a, const TOTAL_SIZE_1D: usize> {
+pub struct MapData <'a> {
     pub mapSizeX: usize,
     pub mapSizeY: usize,
-    pub tileMap: [&'a Tiles; TOTAL_SIZE_1D],
-    pub lightMap: [usize; TOTAL_SIZE_1D],  // light levels aren't that large so u8 should be more memory efficent
+    pub tileMap: [&'a Tiles; game::TOTAL_SIZE_1D],
+    pub lightMap: [usize; game::TOTAL_SIZE_1D],  // light levels aren't that large so u8 should be more memory efficent
 }
 
-impl <'a, const TOTAL_SIZE_1D: usize> MapData <'a, TOTAL_SIZE_1D> {
+impl MapData <'_> {
     // basic constructor to prevent the annoyance of trying to initialize the array
     pub fn new (sizeX: usize, sizeY: usize) -> Self {
         MapData {
             mapSizeX: sizeX,
             mapSizeY: sizeY,
-            tileMap: [&Tiles::Empty; TOTAL_SIZE_1D],
-            lightMap: [9usize; TOTAL_SIZE_1D],
+            tileMap: [&Tiles::Empty; game::TOTAL_SIZE_1D],
+            lightMap: [9usize; game::TOTAL_SIZE_1D],
             // light levels go from  0 - 9  with 9 being the darkest (wonderful indexes)
         }
     }
 
     // adds a value to a row
-    pub fn EditTilemapElement (&mut self, tile: &'a Tiles, x: usize, y: usize) {
+    /*pub fn EditTilemapElement (&mut self, tile: &'a Tiles, x: usize, y: usize) {
         if x < self.mapSizeX && y < self.mapSizeY {  // checking for bounds constraints (to prevent any errors)
             self.tileMap[x + y * self.mapSizeX] = tile;  // adding the value
         }
+    }*/
+
+    pub fn CheckForTileSet <const NUMBER_OF_TILES: usize> (&self, tileSet: &[Tiles; NUMBER_OF_TILES], x: usize, y: usize) -> Option <Tiles> {
+        if x < self.mapSizeX &&
+           y < self.mapSizeY &&
+           tileSet.contains(
+                self.tileMap[x + y * self.mapSizeX]
+           ) {
+            return Some(*self.tileMap[x + y * self.mapSizeX]);
+           }
+        None
     }
 
     // checks for collision with a given tile
@@ -49,6 +78,13 @@ impl <'a, const TOTAL_SIZE_1D: usize> MapData <'a, TOTAL_SIZE_1D> {
            {
             return true;
         } false
+    }
+    
+    pub fn GetLightLevel (&self, pointX: usize, pointY: usize) -> Option <usize> {
+        if pointX < self.mapSizeX && pointY < self.mapSizeY {
+            return Some(self.lightMap[pointX + pointY * self.mapSizeX]);
+        }
+        None
     }
 
     // checks for a neighbor's light compared to the current light for the GenerateLightAura function
@@ -113,4 +149,68 @@ impl <'a, const TOTAL_SIZE_1D: usize> MapData <'a, TOTAL_SIZE_1D> {
     }
 }
 
+
+// loots a chest
+pub fn TryLootTile <const NUMBER_OF_ITEMS: usize> (
+    player: &mut player::Player,
+    tileMap: &mut MapData,
+    lootTable: &[(usize, items::Item); NUMBER_OF_ITEMS],
+    x: usize, y: usize ) {
+    
+    // making sure the tile is a chest
+    if tileMap.CheckForTileSet(&CHEST_TILES, x, y).is_none() { return; }
+    tileMap.tileMap[x + y * tileMap.mapSizeX] = &Tiles::Empty;
+    
+    let mut rng = rand::thread_rng();
+    
+    loop {
+        let randIndex = rng.gen_range(0..NUMBER_OF_ITEMS);
+
+        let (chance, item) = &lootTable[randIndex];
+        let randChance = rng.gen_range(0..=100);
+        if randChance <= *chance {
+            player.items.push(item.clone());
+
+            println!("Item: {}", item.name);
+            
+            return;  // the item was gathered
+        }
+    }
+}
+
+
+// uses an enchantment table
+pub fn TryEnchantment <const NUMBER_OF_ENCHANTMENTS: usize> (
+    player: &mut player::Player,
+    tileMap: &mut MapData,
+    enchantmentsTable: &[(usize, items::ItemEnchantment, String); NUMBER_OF_ENCHANTMENTS],
+    x: usize, y: usize ) {
+
+        // making sure the tile is an enchantment table
+        if tileMap.CheckForTileSet(&ENCHANTMENT_TILES, x, y).is_none() { return; }
+        tileMap.tileMap[x + y * tileMap.mapSizeX] = &Tiles::Empty;
+
+        let mut rng = rand::thread_rng();
+
+        loop {
+            let randIndex = rng.gen_range(0..NUMBER_OF_ENCHANTMENTS);
+
+            let (chance, enchantment, name) = &enchantmentsTable[randIndex];
+            let randChance = rng.gen_range(0..=100);
+            if randChance <= *chance {
+
+                // apply the enchantment
+                let mut enchantments = player.items[player.hand].enchantments.clone();
+                enchantments.push((enchantment.clone(), name.clone()));
+                player.items[player.hand].itemUsageFunc = items::GetMeleWeaponUsageFunction(
+                    player.items[player.hand].damage,
+                    player.items[player.hand].range,
+                    enchantments);
+                
+                println!("Name: {}", name);
+
+                return;
+            }
+        }
+    }
 
